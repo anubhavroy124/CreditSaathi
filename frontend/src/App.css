@@ -114,6 +114,7 @@ img {
   line-height: 1.05;
   letter-spacing: -0.02em;
   text-wrap: balance;
+  color: var(--ink);
 }
 
 .intro {
@@ -266,6 +267,7 @@ img {
   margin: 8px 0 24px;
   font-size: 1.5rem;
   line-height: 1.2;
+  color: var(--ink);
 }
 
 .progress-card ol {
