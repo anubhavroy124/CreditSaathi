@@ -34,6 +34,9 @@ function App() {
   const [summary, setSummary] = useState(null)
   const [checkedRecords, setCheckedRecords] = useState({})
 
+  const checkedCount = RECORD_CHECKLIST.filter((item) => checkedRecords[item.id]).length
+  const totalCount = RECORD_CHECKLIST.length
+
   const confirmationRef = useRef(null)
   const firstInputRef = useRef(null)
 
@@ -275,6 +278,13 @@ function App() {
                 MUDRA or CGTMSE). This checklist is for preparation only and does
                 not guarantee eligibility or loan approval.
               </p>
+            </div>
+
+            <div className="checklist-header">
+              <h2 className="checklist-heading">Common document examples</h2>
+              <span className="checklist-counter" role="status" aria-live="polite">
+                {checkedCount} of {totalCount} examples marked as available
+              </span>
             </div>
 
             <ul className="records-checklist">

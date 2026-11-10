@@ -581,6 +581,34 @@ img {
   color: var(--ink);
 }
 
+.checklist-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.checklist-heading {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.checklist-counter {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--primary-dark);
+  background: #e6f4ee;
+  border: 1px solid #bfe3d5;
+  border-radius: 999px;
+  padding: 4px 14px;
+}
+
 .records-checklist {
   list-style: none;
   margin: 0 0 28px 0;
