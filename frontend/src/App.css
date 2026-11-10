@@ -441,6 +441,35 @@ img {
   word-break: break-word;
 }
 
+.confirmation-actions {
+  margin-top: 18px;
+}
+
+.edit-details-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: #fff;
+  border: 1.5px solid var(--primary);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.edit-details-btn:hover {
+  background: #e6f4ee;
+}
+
+.edit-details-btn:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .confirmation-note {
   margin: 18px 0 0;
   padding-top: 14px;

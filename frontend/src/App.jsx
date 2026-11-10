@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
 
 function App() {
@@ -8,6 +8,16 @@ function App() {
   const [documentName, setDocumentName] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [summary, setSummary] = useState(null)
+
+  const confirmationRef = useRef(null)
+  const firstInputRef = useRef(null)
+
+  // When a valid summary is generated, smoothly bring the confirmation card into view
+  useEffect(() => {
+    if (summary && confirmationRef.current) {
+      confirmationRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [summary])
 
   const handleSubmit = (event) => {
     // Prevent the default browser behavior, which reloads the page on form submit
@@ -28,6 +38,13 @@ function App() {
       fundingAmount: fundingAmount.trim(),
       documentName: documentName || 'None attached (optional)',
     })
+  }
+
+  const handleEditDetails = () => {
+    if (firstInputRef.current) {
+      firstInputRef.current.focus()
+      firstInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
   }
 
   return (
@@ -56,6 +73,7 @@ function App() {
             <label>
               What kind of business do you run?
               <input
+                ref={firstInputRef}
                 type="text"
                 placeholder="For example, a tailoring shop"
                 value={businessType}
@@ -116,12 +134,13 @@ function App() {
 
           {summary && (
             <section
+              ref={confirmationRef}
               className="confirmation-card"
               role="status"
               aria-live="polite"
             >
-              <span className="confirmation-badge">Ready for review</span>
-              <h2>Profile Details Recorded</h2>
+              <span className="confirmation-badge">Preview only</span>
+              <h2>Preview of Your Details</h2>
               <dl className="summary-list">
                 <div className="summary-row">
                   <dt>Business Type</dt>
@@ -142,9 +161,20 @@ function App() {
                   <dd>{summary.documentName}</dd>
                 </div>
               </dl>
+
+              <div className="confirmation-actions">
+                <button
+                  type="button"
+                  className="edit-details-btn"
+                  onClick={handleEditDetails}
+                >
+                  Edit details
+                </button>
+              </div>
+
               <p className="confirmation-note">
-                This is a prototype summary stored only in your browser for this
-                session. No files or personal data have been uploaded.
+                These details are only shown on this page for this preview.
+                Nothing has been saved, submitted, or sent anywhere.
               </p>
             </section>
           )}
