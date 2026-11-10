@@ -1,15 +1,43 @@
+import { useState } from 'react'
 import './App.css'
 
 function App() {
+  const [businessType, setBusinessType] = useState('')
+  const [location, setLocation] = useState('')
+  const [fundingAmount, setFundingAmount] = useState('')
+  const [documentName, setDocumentName] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [summary, setSummary] = useState(null)
+
+  const handleSubmit = (event) => {
+    // Prevent the default browser behavior, which reloads the page on form submit
+    event.preventDefault()
+
+    // Validate required fields
+    if (!businessType.trim() || !location.trim() || !fundingAmount) {
+      setErrorMessage('Please fill in your business type, location, and funding amount.')
+      setSummary(null)
+      return
+    }
+
+    // Clear any previous error and show the summary
+    setErrorMessage('')
+    setSummary({
+      businessType: businessType.trim(),
+      location: location.trim(),
+      fundingAmount: fundingAmount.trim(),
+      documentName: documentName || 'None attached (optional)',
+    })
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
         <a className="brand" href="/">
           <img
-          className="brand-logo"
-          src="/creditsaathi-logo.png"
-          alt="CreditSaathi"
-          
+            className="brand-logo"
+            src="/creditsaathi-logo.png"
+            alt="CreditSaathi"
           />
         </a>
         <span className="prototype-label">MSME credit readiness</span>
@@ -24,35 +52,102 @@ function App() {
             information and show you what to prepare.
           </p>
 
-          <form className="profile-form">
+          <form className="profile-form" onSubmit={handleSubmit}>
             <label>
               What kind of business do you run?
-              <input type="text" placeholder="For example, a tailoring shop" />
+              <input
+                type="text"
+                placeholder="For example, a tailoring shop"
+                value={businessType}
+                onChange={(e) => setBusinessType(e.target.value)}
+                required
+              />
             </label>
 
             <label>
               Where is your business located?
-              <input type="text" placeholder="City or district, state" />
+              <input
+                type="text"
+                placeholder="City or district, state"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                required
+              />
             </label>
 
             <label>
               How much funding are you exploring?
               <div className="amount-input">
                 <span>₹</span>
-                <input type="number" placeholder="300000" />
+                <input
+                  type="number"
+                  placeholder="300000"
+                  min="1"
+                  value={fundingAmount}
+                  onChange={(e) => setFundingAmount(e.target.value)}
+                  required
+                />
               </div>
             </label>
 
             <label>
               Add a business document
-              <input type="file" accept=".pdf,.csv,.jpg,.jpeg,.png" />
+              <input
+                type="file"
+                accept=".pdf,.csv,.jpg,.jpeg,.png"
+                onChange={(e) => {
+                  const file = e.target.files && e.target.files[0]
+                  setDocumentName(file ? file.name : '')
+                }}
+              />
               <span className="hint">
                 You can begin without a document and add one later.
               </span>
             </label>
 
-            <button type="button">Continue</button>
+            {errorMessage && (
+              <p className="form-error" role="alert">
+                {errorMessage}
+              </p>
+            )}
+
+            <button type="submit">Continue</button>
           </form>
+
+          {summary && (
+            <section
+              className="confirmation-card"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="confirmation-badge">Ready for review</span>
+              <h2>Profile Details Recorded</h2>
+              <dl className="summary-list">
+                <div className="summary-row">
+                  <dt>Business Type</dt>
+                  <dd>{summary.businessType}</dd>
+                </div>
+                <div className="summary-row">
+                  <dt>Location</dt>
+                  <dd>{summary.location}</dd>
+                </div>
+                <div className="summary-row">
+                  <dt>Funding Exploring</dt>
+                  <dd>
+                    ₹{Number(summary.fundingAmount).toLocaleString('en-IN')}
+                  </dd>
+                </div>
+                <div className="summary-row">
+                  <dt>Attached Document</dt>
+                  <dd>{summary.documentName}</dd>
+                </div>
+              </dl>
+              <p className="confirmation-note">
+                This is a prototype summary stored only in your browser for this
+                session. No files or personal data have been uploaded.
+              </p>
+            </section>
+          )}
         </section>
 
         <aside className="progress-card">
