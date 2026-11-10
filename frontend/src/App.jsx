@@ -109,7 +109,7 @@ function App() {
             </label>
 
             <label>
-              Add a business document
+              Add a business document (optional)
               <input
                 type="file"
                 accept=".pdf,.csv,.jpg,.jpeg,.png"
@@ -184,7 +184,7 @@ function App() {
           <p className="eyebrow">YOUR READINESS JOURNEY</p>
           <h2>Small steps, made clearer.</h2>
           <ol>
-            <li className="current">Tell us about your business</li>
+            <li className="current" aria-current="step">Tell us about your business</li>
             <li>Organize your records</li>
             <li>Explore possible routes</li>
             <li>Review your readiness checklist</li>
