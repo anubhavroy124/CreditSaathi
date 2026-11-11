@@ -246,8 +246,13 @@ img {
   transition: background 0.15s;
 }
 
-.profile-form button:hover {
+.profile-form button:hover:not(:disabled) {
   background: var(--primary-dark);
+}
+
+.profile-form button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .profile-form button:focus-visible {

@@ -31,6 +31,7 @@ function App() {
   const [fundingAmount, setFundingAmount] = useState('')
   const [documentName, setDocumentName] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const [summary, setSummary] = useState(null)
   const [checkedRecords, setCheckedRecords] = useState({})
 
@@ -47,25 +48,83 @@ function App() {
     }
   }, [summary, currentStep])
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     // Prevent the default browser behavior, which reloads the page on form submit
     event.preventDefault()
 
-    // Validate required fields
-    if (!businessType.trim() || !location.trim() || !fundingAmount) {
+    const trimmedBusiness = businessType.trim()
+    const trimmedLocation = location.trim()
+    const parsedAmount = Number(fundingAmount)
+
+    // Quick client-side check
+    if (!trimmedBusiness || !trimmedLocation || !fundingAmount) {
       setErrorMessage('Please fill in your business type, location, and funding amount.')
       setSummary(null)
       return
     }
 
-    // Clear any previous error and show the summary
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      setErrorMessage('Please enter a valid positive funding amount.')
+      setSummary(null)
+      return
+    }
+
+    setIsLoading(true)
     setErrorMessage('')
-    setSummary({
-      businessType: businessType.trim(),
-      location: location.trim(),
-      fundingAmount: fundingAmount.trim(),
-      documentName: documentName || 'None attached (optional)',
-    })
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/profile/preview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          business_type: trimmedBusiness,
+          location: trimmedLocation,
+          funding_amount: parsedAmount,
+          document_name: documentName.trim() || null,
+        }),
+      })
+
+      if (!response.ok) {
+        let errorDetail = 'The server was unable to process your request.'
+        try {
+          const errData = await response.json()
+          if (errData && errData.detail) {
+            if (Array.isArray(errData.detail)) {
+              errorDetail = errData.detail.map((d) => d.msg || JSON.stringify(d)).join(', ')
+            } else if (typeof errData.detail === 'string') {
+              errorDetail = errData.detail
+            }
+          }
+        } catch {
+          // If response body isn't JSON
+        }
+        throw new Error(errorDetail)
+      }
+
+      const data = await response.json()
+
+      // Map snake_case backend response to the camelCase fields used in the UI
+      setSummary({
+        businessType: data.business_type,
+        location: data.location,
+        fundingAmount: data.funding_amount,
+        documentName: data.document_name || 'None attached (optional)',
+      })
+      setErrorMessage('')
+    } catch (err) {
+      setSummary(null)
+      if (err.name === 'TypeError' || err.message === 'Failed to fetch') {
+        setErrorMessage(
+          'Unable to reach the CreditSaathi backend service. Please ensure the local server is running at http://127.0.0.1:8000.'
+        )
+      } else {
+        setErrorMessage(err.message || 'Something went wrong while communicating with the server.')
+      }
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleEditDetails = () => {
@@ -178,7 +237,9 @@ function App() {
                 </p>
               )}
 
-              <button type="submit">Continue</button>
+              <button type="submit" disabled={isLoading} aria-busy={isLoading}>
+                {isLoading ? 'Checking details...' : 'Continue'}
+              </button>
             </form>
 
             {summary && (
