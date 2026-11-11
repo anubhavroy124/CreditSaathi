@@ -33,13 +33,20 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [summary, setSummary] = useState(null)
-  const [checkedRecords, setCheckedRecords] = useState({})
 
-  const checkedCount = RECORD_CHECKLIST.filter((item) => checkedRecords[item.id]).length
+  // Step 2: Selected image files for the four required items (kept only in browser memory)
+  const [recordFiles, setRecordFiles] = useState({})
+  const [imagesConfirmation, setImagesConfirmation] = useState(null)
+
+  const selectedCount = RECORD_CHECKLIST.filter(
+    (item) => recordFiles[item.id] && recordFiles[item.id].name
+  ).length
   const totalCount = RECORD_CHECKLIST.length
+  const allImagesSelected = selectedCount === totalCount
 
   const confirmationRef = useRef(null)
   const firstInputRef = useRef(null)
+  const imagesConfirmationRef = useRef(null)
 
   // When a valid summary is generated on step 1, smoothly bring the confirmation card into view
   useEffect(() => {
@@ -47,6 +54,13 @@ function App() {
       confirmationRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }, [summary, currentStep])
+
+  // When images confirmation is generated on step 2, scroll it into view
+  useEffect(() => {
+    if (currentStep === 2 && imagesConfirmation && imagesConfirmationRef.current) {
+      imagesConfirmationRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [imagesConfirmation, currentStep])
 
   const handleSubmit = async (event) => {
     // Prevent the default browser behavior, which reloads the page on form submit
@@ -137,11 +151,19 @@ function App() {
     }, 50)
   }
 
-  const toggleRecordCheck = (id) => {
-    setCheckedRecords((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }))
+  const handleRecordFileChange = (id, event) => {
+    const file = event.target.files && event.target.files[0]
+    setRecordFiles((prev) => {
+      const updated = { ...prev }
+      if (file) {
+        updated[id] = file
+      } else {
+        delete updated[id]
+      }
+      return updated
+    })
+    // Reset confirmation if user alters their selected files
+    setImagesConfirmation(null)
   }
 
   const handleGoToRecords = () => {
@@ -152,6 +174,17 @@ function App() {
   const handleBackToDetails = () => {
     setCurrentStep(1)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleSubmitImages = () => {
+    if (!allImagesSelected) return
+    setImagesConfirmation({
+      files: RECORD_CHECKLIST.map((item) => ({
+        id: item.id,
+        title: item.title,
+        fileName: recordFiles[item.id]?.name || 'Unnamed file',
+      })),
+    })
   }
 
   return (
@@ -211,6 +244,7 @@ function App() {
                     min="1"
                     value={fundingAmount}
                     onChange={(e) => setFundingAmount(e.target.value)}
+                    onWheel={(e) => e.currentTarget.blur()}
                     required
                   />
                 </div>
@@ -290,8 +324,10 @@ function App() {
                 </div>
 
                 <p className="confirmation-note">
-                  These details are only shown on this page for this preview.
-                  Nothing has been saved, submitted, or sent anywhere.
+                  In this local preview, your details and the document filename
+                  are sent to the CreditSaathi backend running on this computer.
+                  They aren’t saved to a database or file, and no document is
+                  uploaded.
                 </p>
               </section>
             )}
@@ -342,32 +378,50 @@ function App() {
             </div>
 
             <div className="checklist-header">
-              <h2 className="checklist-heading">Common document examples</h2>
+              <h2 className="checklist-heading">Required document images</h2>
               <span className="checklist-counter" role="status" aria-live="polite">
-                {checkedCount} of {totalCount} examples marked as available
+                {selectedCount} of {totalCount} images selected
               </span>
             </div>
 
             <ul className="records-checklist">
               {RECORD_CHECKLIST.map((item) => {
-                const isChecked = Boolean(checkedRecords[item.id])
+                const selectedFile = recordFiles[item.id]
+                const hasFile = Boolean(selectedFile && selectedFile.name)
                 return (
                   <li
                     key={item.id}
-                    className={`checklist-card ${isChecked ? 'is-checked' : ''}`}
+                    className={`checklist-card ${hasFile ? 'is-checked' : ''}`}
                   >
-                    <label className="checklist-label">
-                      <input
-                        type="checkbox"
-                        className="checklist-checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleRecordCheck(item.id)}
-                      />
-                      <div className="checklist-text">
+                    <div className="checklist-text">
+                      <div className="checklist-header-row">
                         <span className="checklist-title">{item.title}</span>
-                        <span className="checklist-desc">{item.desc}</span>
+                        <span className="required-tag">Required</span>
                       </div>
-                    </label>
+                      <span className="checklist-desc">{item.desc}</span>
+                    </div>
+
+                    <div className="file-picker-container">
+                      <label className="file-picker-label">
+                        <span className="file-picker-prompt">
+                          {hasFile ? 'Change image file:' : 'Choose image (JPEG, PNG, WebP):'}
+                        </span>
+                        <input
+                          type="file"
+                          accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                          className="record-file-input"
+                          onChange={(e) => handleRecordFileChange(item.id, e)}
+                        />
+                      </label>
+                      {hasFile ? (
+                        <div className="selected-file-badge">
+                          <span className="check-icon">✓</span>
+                          <span className="selected-filename">{selectedFile.name}</span>
+                        </div>
+                      ) : (
+                        <span className="no-file-text">No image selected yet</span>
+                      )}
+                    </div>
                   </li>
                 )
               })}
@@ -376,12 +430,61 @@ function App() {
             <div className="records-actions">
               <button
                 type="button"
+                className="primary-action-btn"
+                onClick={handleSubmitImages}
+                disabled={!allImagesSelected}
+              >
+                Submit images and continue
+              </button>
+              <button
+                type="button"
                 className="secondary-btn"
                 onClick={handleBackToDetails}
               >
                 ← Back to business details
               </button>
             </div>
+
+            {!allImagesSelected && (
+              <p className="file-selection-hint">
+                Please select an image file for all 4 items above to enable submission ({selectedCount} of {totalCount} selected).
+              </p>
+            )}
+
+            {imagesConfirmation && (
+              <section
+                ref={imagesConfirmationRef}
+                className="confirmation-card images-confirmation-card"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="confirmation-badge">Selection Confirmed</span>
+                <h2>Document Images Selected</h2>
+                <div className="images-confirmation-notice">
+                  <p>
+                    <strong>Notice:</strong> This page only confirms that image
+                    files have been selected in your browser. It does not verify,
+                    inspect, or validate their contents, and no files have been
+                    uploaded or sent anywhere.
+                  </p>
+                </div>
+
+                <dl className="summary-list">
+                  {imagesConfirmation.files.map((fileItem) => (
+                    <div key={fileItem.id} className="summary-row">
+                      <dt>{fileItem.title}</dt>
+                      <dd>{fileItem.fileName}</dd>
+                    </div>
+                  ))}
+                </dl>
+
+                <p className="confirmation-note">
+                  All 4 required image files are recorded for this preview
+                  session. Lenders and scheme authorities make all eligibility
+                  and approval decisions.
+                </p>
+              </section>
+            )}
           </section>
         )}
 
