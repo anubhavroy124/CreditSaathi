@@ -1,0 +1,21 @@
+# Virtual environment folders
+.venv/
+venv/
+env/
+ENV/
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Environment files and sensitive credentials
+.env
+.env.*
+!.env.example
+
+# IDE and editor settings
+.vscode/
+.idea/
