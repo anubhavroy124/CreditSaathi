@@ -82,3 +82,93 @@ def create_profile_preview(payload: ProfilePreviewRequest):
         "document_name": payload.document_name,
     }
 
+
+# Standard preparation checklist example IDs matching the React frontend
+CHECKLIST_ITEMS = {
+    "registration": "Business registration or ownership proof",
+    "bank_statements": "Recent bank statements",
+    "sales_records": "Sales and expense records",
+    "funds_estimate": "Estimate of how the funding will be used",
+}
+
+
+class AssistantNextStepRequest(BaseModel):
+    business_type: Optional[str] = Field(None, description="Kind of business")
+    location: Optional[str] = Field(None, description="City, district, or state")
+    funding_amount: Optional[float] = Field(None, description="Target funding amount")
+    marked_records: list[str] = Field(
+        default_factory=list,
+        description="List of checklist item IDs marked as available",
+    )
+    available_records: Optional[list[str]] = Field(
+        None,
+        description="Alternative alias for marked_records",
+    )
+    checklist_ids: Optional[list[str]] = Field(
+        None,
+        description="Alternative alias for marked_records",
+    )
+
+    @property
+    def selected_record_ids(self) -> set[str]:
+        records = set(self.marked_records)
+        if self.available_records:
+            records.update(self.available_records)
+        if self.checklist_ids:
+            records.update(self.checklist_ids)
+        return records
+
+
+@app.post("/api/assistant/next-step")
+def get_assistant_next_step(payload: AssistantNextStepRequest):
+    """
+    Suggests the next preparation step using deterministic rules based on
+    the owner's business profile and marked checklist examples.
+    Does not make credit decisions or claim that examples are mandatory.
+    """
+    # Rule 1: If any profile detail is missing, ask for it
+    missing_details = []
+    if not payload.business_type or not payload.business_type.strip():
+        missing_details.append("business type")
+    if not payload.location or not payload.location.strip():
+        missing_details.append("location")
+    if payload.funding_amount is None or payload.funding_amount <= 0:
+        missing_details.append("funding amount (positive number)")
+
+    if missing_details:
+        missing_text = ", ".join(missing_details)
+        return {
+            "status": "missing_profile",
+            "message": f"To understand your next step, please provide your {missing_text}.",
+            "remaining_examples": [],
+        }
+
+    # Rule 2: Identify checklist examples not yet marked as available
+    selected_ids = payload.selected_record_ids
+    unmarked_keys = [item_id for item_id in CHECKLIST_ITEMS if item_id not in selected_ids]
+
+    if unmarked_keys:
+        unmarked_names = [CHECKLIST_ITEMS[k] for k in unmarked_keys]
+        items_bulleted = "; ".join(unmarked_names)
+        return {
+            "status": "records_pending",
+            "message": (
+                f"You have started organizing records for your {payload.business_type.strip()} in {payload.location.strip()}. "
+                f"Common examples not yet marked as available include: {items_bulleted}. "
+                "Keep in mind that these are common preparation examples; actual requirements vary by financing route."
+            ),
+            "remaining_examples": unmarked_names,
+        }
+
+    # Rule 3: All examples are marked; recommend checking specific route requirements
+    return {
+        "status": "ready_for_routes",
+        "message": (
+            f"You have marked all common example records as available for your {payload.business_type.strip()}. "
+            "Your next step is to explore potential financing routes (such as banks, NBFCs, or government schemes) "
+            "and verify the exact official requirements for your chosen route."
+        ),
+        "remaining_examples": [],
+    }
+
+
