@@ -24,8 +24,49 @@ const RECORD_CHECKLIST = [
   },
 ]
 
+const FINANCING_ROUTES = [
+  {
+    id: 'mudra',
+    name: 'Pradhan Mantri MUDRA Yojana (PMMY)',
+    category: 'Government Scheme / Micro Enterprise Credit',
+    coverage:
+      'Up to ₹10 Lakhs (Shishu, Kishore, Tarun); Tarun Plus up to ₹20 Lakhs',
+    overview:
+      'Provides micro-credit through commercial banks, RRBs, and NBFCs for non-corporate, non-farm small enterprises across Shishu (up to ₹50k), Kishore (₹50k–₹5L), and Tarun (₹5L–₹10L). Tarun Plus provides up to ₹20 Lakhs with a mandatory condition: the borrower must have successfully repaid a previous Tarun loan.',
+    typicalDocs:
+      'Udyam registration, past Tarun loan repayment track record (for Tarun Plus), last 6–12 months bank statements, proof of business address, quotation of machinery or equipment.',
+    source:
+      'Official source: financialservices.gov.in (DFS) & mudra.org.in',
+  },
+  {
+    id: 'cgtmse',
+    name: 'CGTMSE Credit Guarantee Scheme',
+    category: 'Third-Party Credit Guarantee for Lenders',
+    coverage:
+      'Credit facility caps vary by lender, up to ₹10 Crores for eligible institutions',
+    overview:
+      'Provides a credit guarantee directly to member lending institutions (scheduled commercial banks and select financial institutions) to facilitate collateral-free lending to MSEs. Important: CGTMSE guarantees the lender against default; it is not a direct loan or a guarantee promise to the business borrower.',
+    typicalDocs:
+      'Udyam certificate, detailed project report/business plan, GST returns, operating bank statements, and lender MSE credit application.',
+    source:
+      'Official source: cgtmse.in (Scheme Document CGS-I) & Ministry of MSME',
+  },
+  {
+    id: 'bank_term',
+    name: 'Bank / NBFC MSME Business Loan',
+    category: 'Direct Bank Term Loan or Working Capital',
+    coverage: 'Based on declared turnover and cash flows',
+    overview:
+      'Commercial credit lines, overdrafts (OD), or term loans evaluated on historical sales turnover, banking stability, and financial records.',
+    typicalDocs:
+      '12 months bank statements, filed GST returns, business premises ownership/rental deed, and audited/basic financial statements.',
+    source: 'Official source: Individual lending institution policies & RBI guidelines',
+  },
+]
+
 function App() {
   const [currentStep, setCurrentStep] = useState(1)
+  const [highestUnlockedStep, setHighestUnlockedStep] = useState(1)
   const [businessType, setBusinessType] = useState('')
   const [location, setLocation] = useState('')
   const [fundingAmount, setFundingAmount] = useState('')
@@ -38,6 +79,11 @@ function App() {
   const [recordFiles, setRecordFiles] = useState({})
   const [imagesConfirmation, setImagesConfirmation] = useState(null)
 
+  // Step 3: Selected financing route
+  const [selectedRouteId, setSelectedRouteId] = useState('mudra')
+  const selectedRoute =
+    FINANCING_ROUTES.find((r) => r.id === selectedRouteId) || FINANCING_ROUTES[0]
+
   const selectedCount = RECORD_CHECKLIST.filter(
     (item) => recordFiles[item.id] && recordFiles[item.id].name
   ).length
@@ -47,6 +93,12 @@ function App() {
   const confirmationRef = useRef(null)
   const firstInputRef = useRef(null)
   const imagesConfirmationRef = useRef(null)
+  const handleSidebarNavigation = (step) => {
+  if (step > highestUnlockedStep) return
+
+  setCurrentStep(step)
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
   // When a valid summary is generated on step 1, smoothly bring the confirmation card into view
   useEffect(() => {
@@ -167,6 +219,7 @@ function App() {
   }
 
   const handleGoToRecords = () => {
+    setHighestUnlockedStep((highest) => Math.max(highest, 2))
     setCurrentStep(2)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -239,12 +292,12 @@ function App() {
                 <div className="amount-input">
                   <span>₹</span>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     placeholder="300000"
-                    min="1"
                     value={fundingAmount}
-                    onChange={(e) => setFundingAmount(e.target.value)}
-                    onWheel={(e) => e.currentTarget.blur()}
+                    onChange={(e) => setFundingAmount(e.target.value.replace(/\D/g, ''))}
                     required
                   />
                 </div>
@@ -478,6 +531,20 @@ function App() {
                   ))}
                 </dl>
 
+                <div className="confirmation-actions">
+                  <button
+                    type="button"
+                    className="primary-action-btn"
+                    onClick={() => {
+                      setHighestUnlockedStep((highest) => Math.max(highest, 3))
+                      setCurrentStep(3)
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }}
+                  >
+                    Continue to explore routes →
+                  </button>
+                </div>
+
                 <p className="confirmation-note">
                   All 4 required image files are recorded for this preview
                   session. Lenders and scheme authorities make all eligibility
@@ -488,36 +555,361 @@ function App() {
           </section>
         )}
 
+        {currentStep === 3 && (
+          <section className="routes-screen">
+            <p className="eyebrow">STEP 3 OF 4 · FINANCING OPTIONS</p>
+            <h1>Explore possible financing routes.</h1>
+            <p className="intro">
+              Compare illustrative financing options to see what types of
+              credit may align with your business profile. Select one route to
+              inspect its typical preparation expectations.
+            </p>
+
+            <div className="records-disclaimer">
+              <p>
+                <strong>Advisory & Limitations:</strong> CreditSaathi does not
+                provide loans, determine credit eligibility, or guarantee
+                approval. These route summaries are illustrative examples based
+                on public government and banking frameworks. Actual terms,
+                eligibility criteria, and required records must be verified
+                directly with the relevant lender or official scheme authority.
+              </p>
+            </div>
+
+            <div className="routes-list">
+              {FINANCING_ROUTES.map((route) => {
+                const isSelected = selectedRouteId === route.id
+                return (
+                  <div
+                    key={route.id}
+                    className={`route-card ${isSelected ? 'is-selected' : ''}`}
+                    onClick={() => setSelectedRouteId(route.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setSelectedRouteId(route.id)
+                      }
+                    }}
+                  >
+                    <div className="route-card-header">
+                      <div>
+                        <span className="route-category">{route.category}</span>
+                        <h3 className="route-title">{route.name}</h3>
+                      </div>
+                      <div className="route-select-indicator">
+                        <input
+                          type="radio"
+                          name="financing_route"
+                          checked={isSelected}
+                          onChange={() => setSelectedRouteId(route.id)}
+                          aria-label={route.name}
+                        />
+                      </div>
+                    </div>
+
+                    <p className="route-coverage">
+                      <strong>Typical Coverage:</strong> {route.coverage}
+                    </p>
+
+                    <p className="route-overview">{route.overview}</p>
+
+                    <div className="route-docs-box">
+                      <span className="route-docs-label">
+                        Typical Records Checked:
+                      </span>
+                      <p className="route-docs-text">{route.typicalDocs}</p>
+                    </div>
+
+                    <p className="route-source">
+                      <span className="source-label">Source:</span>{' '}
+                      {route.source}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="records-actions">
+              <button
+                type="button"
+                className="primary-action-btn"
+                onClick={() => {
+                  setCurrentStep(4)
+                  setHighestUnlockedStep((highest) => Math.max(highest, 4))
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+              >
+                Continue to readiness checklist →
+              </button>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => {
+                  setCurrentStep(2)
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+              >
+                ← Back to records
+              </button>
+            </div>
+          </section>
+        )}
+
+        {currentStep === 4 && (
+          <section className="review-screen">
+            <p className="eyebrow">STEP 4 OF 4 · READINESS REVIEW</p>
+            <h1>Review your readiness checklist.</h1>
+            <p className="intro">
+              Here is your consolidated draft preparation package. Review your
+              recorded business information, chosen route, and locally selected
+              document images.
+            </p>
+
+            <div className="records-disclaimer review-notice">
+              <p>
+                <strong>Notice on Document Handling:</strong> Selecting files
+                only confirms they were chosen locally in your browser.
+                CreditSaathi has not verified, read, or validated the contents
+                of your files, nor have any files been uploaded or transmitted
+                to any external service. Lenders and scheme authorities make all
+                eligibility and approval decisions.
+              </p>
+            </div>
+
+            {/* Section 1: Business Profile */}
+            <div className="review-card">
+              <div className="review-card-header">
+                <h3>1. Business Profile</h3>
+                <button
+                  type="button"
+                  className="text-btn"
+                  onClick={() => {
+                    setCurrentStep(1)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                >
+                  Edit details
+                </button>
+              </div>
+              <dl className="summary-list">
+                <div className="summary-row">
+                  <dt>Business Type</dt>
+                  <dd>
+                    {summary?.businessType || businessType || 'Not specified'}
+                  </dd>
+                </div>
+                <div className="summary-row">
+                  <dt>Location</dt>
+                  <dd>{summary?.location || location || 'Not specified'}</dd>
+                </div>
+                <div className="summary-row">
+                  <dt>Target Funding Amount</dt>
+                  <dd>
+                    ₹
+                    {Number(
+                      summary?.fundingAmount || fundingAmount || 0
+                    ).toLocaleString('en-IN')}
+                  </dd>
+                </div>
+                <div className="summary-row">
+                  <dt>Initial Document Attached</dt>
+                  <dd>
+                    {summary?.documentName ||
+                      documentName ||
+                      'None attached (optional)'}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            {/* Section 2: Selected Financing Route */}
+            <div className="review-card">
+              <div className="review-card-header">
+                <h3>2. Selected Financing Route</h3>
+                <button
+                  type="button"
+                  className="text-btn"
+                  onClick={() => {
+                    setCurrentStep(3)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                >
+                  Change route
+                </button>
+              </div>
+              <dl className="summary-list">
+                <div className="summary-row">
+                  <dt>Route Name</dt>
+                  <dd>{selectedRoute.name}</dd>
+                </div>
+                <div className="summary-row">
+                  <dt>Category</dt>
+                  <dd>{selectedRoute.category}</dd>
+                </div>
+                <div className="summary-row">
+                  <dt>Funding Range</dt>
+                  <dd>{selectedRoute.coverage}</dd>
+                </div>
+                <div className="summary-row">
+                  <dt>Official Source</dt>
+                  <dd>{selectedRoute.source}</dd>
+                </div>
+              </dl>
+            </div>
+
+            {/* Section 3: Document Images Checklist */}
+            <div className="review-card">
+              <div className="review-card-header">
+                <h3>3. Document Images Selected</h3>
+                <button
+                  type="button"
+                  className="text-btn"
+                  onClick={() => {
+                    setCurrentStep(2)
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                >
+                  Update files
+                </button>
+              </div>
+              <ul className="review-docs-list">
+                {RECORD_CHECKLIST.map((item) => {
+                  const file = recordFiles[item.id]
+                  return (
+                    <li key={item.id} className="review-doc-item">
+                      <div className="review-doc-info">
+                        <span className="review-doc-title">{item.title}</span>
+                        <span className="review-doc-filename">
+                          {file?.name ? file.name : 'No image file selected'}
+                        </span>
+                      </div>
+                      <span
+                        className={`review-doc-status ${file?.name ? 'is-ready' : 'is-missing'}`}
+                      >
+                        {file?.name ? '✓ Selected locally' : 'Pending'}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+
+            {/* Section 4: Recommended Action Items */}
+            <div className="review-card">
+              <div className="review-card-header">
+                <h3>4. Next Steps Before Approaching a Lender</h3>
+              </div>
+              <ul className="action-items-list">
+                <li>
+                  <strong>Verify current official criteria:</strong> Visit the
+                  official portal ({selectedRoute.source.split(':')[1]?.trim() || 'official source'})
+                  to check for recent policy changes or specific eligibility
+                  terms.
+                </li>
+                <li>
+                  <strong>Prepare original records:</strong> Ensure original
+                  physical documents and clear digital copies are ready for
+                  verification by the bank or NBFC branch.
+                </li>
+                <li>
+                  <strong>Obtain asset quotations:</strong> If seeking machinery
+                  or equipment funds, obtain formal proforma invoices or
+                  supplier estimates.
+                </li>
+                <li>
+                  <strong>Direct submission:</strong> CreditSaathi does not
+                  submit loan applications. Submit your final application
+                  package directly to an approved lending institution.
+                </li>
+              </ul>
+            </div>
+
+            <div className="records-actions">
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => {
+                  setCurrentStep(3)
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+              >
+                ← Back to financing routes
+              </button>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => {
+                  setCurrentStep(1)
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+              >
+                Review business details
+              </button>
+            </div>
+          </section>
+        )}
+
         <aside className="progress-card">
           <p className="eyebrow">YOUR READINESS JOURNEY</p>
           <h2>Small steps, made clearer.</h2>
           <ol>
             <li
-              className={
-                currentStep === 1
-                  ? 'current'
-                  : currentStep > 1
-                    ? 'completed'
-                    : ''
-              }
-              aria-current={currentStep === 1 ? 'step' : undefined}
+              className={currentStep === 1 ? 'current' : currentStep > 1 ? 'completed' : ''}
             >
-              Tell us about your business
+              <button
+                type="button"
+                className="journey-step-button"
+                onClick={() => handleSidebarNavigation(1)}
+                disabled={highestUnlockedStep < 1}
+                aria-current={currentStep === 1 ? 'step' : undefined}
+              >
+                Tell us about your business
+              </button>
             </li>
+                
             <li
-              className={
-                currentStep === 2
-                  ? 'current'
-                  : currentStep > 2
-                    ? 'completed'
-                    : ''
-              }
-              aria-current={currentStep === 2 ? 'step' : undefined}
+              className={currentStep === 2 ? 'current' : currentStep > 2 ? 'completed' : ''}
             >
-              Organize your records
+              <button
+                type="button"
+                className="journey-step-button"
+                onClick={() => handleSidebarNavigation(2)}
+                disabled={highestUnlockedStep < 2}
+                aria-current={currentStep === 2 ? 'step' : undefined}
+              >
+                Organize your records
+              </button>
             </li>
-            <li>Explore possible routes</li>
-            <li>Review your readiness checklist</li>
+                
+            <li
+              className={currentStep === 3 ? 'current' : currentStep > 3 ? 'completed' : ''}
+            >
+              <button
+                type="button"
+                className="journey-step-button"
+                onClick={() => handleSidebarNavigation(3)}
+                disabled={highestUnlockedStep < 3}
+                aria-current={currentStep === 3 ? 'step' : undefined}
+              >
+                Explore possible routes
+              </button>
+            </li>
+                
+            <li
+              className={currentStep === 4 ? 'current' : currentStep > 4 ? 'completed' : ''}
+            >
+              <button
+                type="button"
+                className="journey-step-button"
+                onClick={() => handleSidebarNavigation(4)}
+                disabled={highestUnlockedStep < 4}
+                aria-current={currentStep === 4 ? 'step' : undefined}
+              >
+                Review your readiness checklist
+              </button>
+            </li>
           </ol>
           <p className="note">
             CreditSaathi helps you prepare. Lenders and scheme authorities make
